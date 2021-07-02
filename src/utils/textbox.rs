@@ -114,7 +114,7 @@ impl TextBox {
 
 		//let main_text_timer = get_node_assume_safe!(owner, "Background/MainText/Timer");
 		//let main_text_timer = node_cast_assume_unique!(main_text_timer, Timer);
-		let main_text_timer = get_node_auto!(owner, "Background/MainText/Timer", Timer);
+		let main_text_timer = get_node_auto!(owner, "MainText/Timer", Timer);
 
 		main_text_timer
 			.connect("timeout", owner, "maintext_timeout", VariantArray::new_shared(), 0)
@@ -122,7 +122,7 @@ impl TextBox {
 		main_text_timer.start(0.1);
 		main_text_timer.set_one_shot(false);
 
-		let name_text = get_node_auto!(owner, "Background/Name", RichTextLabel);
+		let name_text = get_node_auto!(owner, "Name", RichTextLabel);
 		name_text.set_bbcode(self.dialogue.get_current_serif().get_speaker_name().to_string());
 
 		godot_print!("TextBox::_ready done");
@@ -185,19 +185,19 @@ impl TextBox {
     }
 
 	fn set_main_text(&mut self, owner: &Node2D, text: String) {
-		let main_text = get_node_auto!(owner, "Background/MainText", RichTextLabel);
+		let main_text = get_node_auto!(owner, "MainText", RichTextLabel);
 
 		main_text.set_bbcode(text);
 	}
 
 	fn set_speaker_text(&mut self, owner: &Node2D, name: String) {
-		let name_text = get_node_auto!(owner, "Background/Name", RichTextLabel);
+		let name_text = get_node_auto!(owner, "Name", RichTextLabel);
 
 		name_text.set_bbcode(name);
 	}
 
 	fn stop_text_update(&mut self, owner: &Node2D) {
-		let main_text_timer = get_node_auto!(owner, "Background/MainText/Timer", Timer);
+		let main_text_timer = get_node_auto!(owner, "MainText/Timer", Timer);
 		main_text_timer.set_one_shot(true);
 	}
 }

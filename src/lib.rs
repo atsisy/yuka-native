@@ -24,6 +24,11 @@ impl SaveDataManager {
     fn save(&mut self, _owner: &Node, file_name: GodotString) {
         godot_print!("save! -> {}", file_name.to_string());
     }
+
+    #[export]
+    fn load(&mut self, _owner: &Node, file_name: GodotString) {
+        godot_print!("load! -> {}", file_name.to_string());
+    }
 }
 
 pub fn goto_scene(owner: &Node, path: &str) {
@@ -59,6 +64,7 @@ fn init(handle: InitHandle) {
     handle.add_class::<crate::scene::home::MagicBoard>();
     handle.add_class::<crate::scene::home::MBSaveEntrance>();
     handle.add_class::<crate::scene::home::MBSaveApp>();
+    handle.add_class::<crate::scene::home::MBLoadApp>();
     handle.add_class::<crate::scene::home::SaveEntry>();
     handle.add_class::<crate::scene::home::SaveDataSet>();
 }

@@ -21,12 +21,12 @@ impl Calendar {
 
     #[export]
     fn set_month(&self, owner: &Node2D, m: i32) {
-        let m1 = crate::get_node_assume_safe!(owner, "Background/M1");
+        let m1 = crate::get_node_assume_safe!(owner, "M1");
         unsafe {
             m1.call("set_number", &[(m % 10).to_variant()]);
         }
 
-        let m10 = crate::get_node_assume_safe!(owner, "Background/M10");
+        let m10 = crate::get_node_assume_safe!(owner, "M10");
         unsafe {
             m10.call("set_number", &[(m / 10).to_variant()]);
         }
@@ -34,12 +34,12 @@ impl Calendar {
 
     #[export]
     fn set_day(&self, owner: &Node2D, day: i32) {
-        let d1 = crate::get_node_assume_safe!(owner, "Background/D1");
+        let d1 = crate::get_node_assume_safe!(owner, "D1");
         unsafe {
             d1.call("set_number", &[(day % 10).to_variant()]);
         }
 
-        let d10 = crate::get_node_assume_safe!(owner, "Background/D10");
+        let d10 = crate::get_node_assume_safe!(owner, "D10");
         unsafe {
             d10.call("set_number", &[(day / 10).to_variant()]);
         }
@@ -148,6 +148,17 @@ impl MagicBoard {
                 0
             )
             .unwrap();
+
+        let load_app = get_node_auto!(owner, "Background/MBLoadApp", Node2D);
+        load_app
+            .connect(
+                "move_mb_contents",
+                owner,
+                "move_mb_contents_handler",
+                VariantArray::new_shared(),
+                0
+            )
+            .unwrap();
     }
 
     fn set_child_node_visibility(&self, owner: &Node2D, name: &str, visible: bool) {
@@ -155,6 +166,7 @@ impl MagicBoard {
             "Home" => get_node_auto!(owner, "Background/MBHome", Node2D),
             "SaveEntrance" => get_node_auto!(owner, "Background/SaveEntrance", Node2D),
             "SaveApp" => get_node_auto!(owner, "Background/MBSaveApp", Node2D),
+            "LoadApp" => get_node_auto!(owner, "Background/MBLoadApp", Node2D),
             _ => return,
         };
 
@@ -268,7 +280,7 @@ impl MBSaveEntrance {
             "move_mb_contents",
             &[
                 Variant::from_str("SaveEntrance"),
-                Variant::from_str("Load")
+                Variant::from_str("LoadApp")
             ]
         );
     }
@@ -394,7 +406,12 @@ impl SaveEntry {
                 );
             }
         } else {
-            godot_print!("load is not implemented!");
+            unsafe {
+                save_data_manager.call(
+                    "load",
+                    &[Variant::from_godot_string(&owner.name())]
+                );
+            }
         }
     }
 }
@@ -426,4 +443,66 @@ impl SaveDataSet {
         }
     }
     
+}
+
+#[derive(NativeClass)]
+#[inherit(Node2D)]
+#[register_with(Self::register_signals)]
+pub struct MBLoadApp;
+
+#[methods]
+impl MBLoadApp {
+    fn register_signals(builder: &ClassBuilder<Self>) {
+        builder.add_signal(Signal {
+            name: "move_mb_contents",
+            args: &[
+                SignalArgument {
+                    name: "before",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+                SignalArgument {
+                    name: "after",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+            ],
+        });
+    }
+
+    fn new(_owner: &Node2D) -> Self {
+        MBLoadApp
+    }
+
+    #[export]
+    fn _ready(&self, owner: TRef<Node2D>) {
+        godot_print!("MBSaveApp ready");
+
+        let back = get_node_auto!(owner, "Back", TextureButton);
+        back
+            .connect(
+                "pressed",
+                owner,
+                "back_button_pressed",
+                VariantArray::new_shared(),
+                0
+            )
+            .unwrap();
+
+        let save_data_set = get_node_auto!(owner, "Scroll/VBox/SaveDataSet", Node2D);
+        unsafe { save_data_set.call("set_mode", &[Variant::from_bool(false)]); }
+    }
+    
+    #[export]
+    fn back_button_pressed(&self, owner: &Node2D) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[
+                Variant::from_str("LoadApp"),
+                Variant::from_str("SaveEntrance")
+            ]
+        );
+    }
 }
