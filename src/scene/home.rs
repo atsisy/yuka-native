@@ -1,6 +1,6 @@
-use gdnative::{api::TextureButton, prelude::*};
+use gdnative::{api::{Container, TextureButton, VBoxContainer}, prelude::*};
 
-use crate::get_node_auto;
+use crate::{get_node_auto, native_lib::{self, save_data::{SoilItem, control_save_data, control_save_data_mut}}, quit_game};
 
 #[derive(NativeClass)]
 #[inherit(Node2D)]
@@ -81,23 +81,41 @@ impl MagicBoardHome {
     fn _ready(&self, owner: TRef<Node2D>) {
         let profile_button = get_node_auto!(owner, "Scroll/VBox/Line1/Profile", TextureButton);
         profile_button
-            .connect("pressed", owner, "profile_pressed", VariantArray::new_shared(), 0)
+            .connect(
+                "pressed",
+                owner,
+                "profile_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
             .unwrap();
 
         let save_button = get_node_auto!(owner, "Scroll/VBox/Line2/Save", TextureButton);
         save_button
-            .connect("pressed", owner, "save_pressed", VariantArray::new_shared(), 0)
+            .connect(
+                "pressed",
+                owner,
+                "save_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
             .unwrap();
     }
 
     #[export]
     fn profile_pressed(&self, owner: &Node2D) {
-        owner.emit_signal("move_mb_contents", &[Variant::from_str("Home"), Variant::from_str("profile")]);
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("Home"), Variant::from_str("profile")],
+        );
     }
 
     #[export]
     fn save_pressed(&self, owner: &Node2D) {
-        owner.emit_signal("move_mb_contents", &[Variant::from_str("Home"), Variant::from_str("SaveEntrance")]);
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("Home"), Variant::from_str("SaveEntrance")],
+        );
     }
 }
 
@@ -122,10 +140,9 @@ impl MagicBoard {
                 owner,
                 "move_mb_contents_handler",
                 VariantArray::new_shared(),
-                0
+                0,
             )
             .unwrap();
-
 
         let save_entrance = get_node_auto!(owner, "Background/SaveEntrance", Node2D);
         save_entrance
@@ -134,7 +151,7 @@ impl MagicBoard {
                 owner,
                 "move_mb_contents_handler",
                 VariantArray::new_shared(),
-                0
+                0,
             )
             .unwrap();
 
@@ -145,7 +162,7 @@ impl MagicBoard {
                 owner,
                 "move_mb_contents_handler",
                 VariantArray::new_shared(),
-                0
+                0,
             )
             .unwrap();
 
@@ -156,7 +173,7 @@ impl MagicBoard {
                 owner,
                 "move_mb_contents_handler",
                 VariantArray::new_shared(),
-                0
+                0,
             )
             .unwrap();
     }
@@ -230,37 +247,34 @@ impl MBSaveEntrance {
         godot_print!("MBSaveEntrance ready");
 
         let save = get_node_auto!(owner, "Save", Button);
-        save
-            .connect(
-                "pressed",
-                owner,
-                "save_button_pressed",
-                VariantArray::new_shared(),
-                0
-            )
-            .unwrap();
+        save.connect(
+            "pressed",
+            owner,
+            "save_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
 
         let load = get_node_auto!(owner, "Load", Button);
-        load
-            .connect(
-                "pressed",
-                owner,
-                "load_button_pressed",
-                VariantArray::new_shared(),
-                0
-            )
-            .unwrap();
+        load.connect(
+            "pressed",
+            owner,
+            "load_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
 
         let back = get_node_auto!(owner, "Back", TextureButton);
-            back
-                .connect(
-                    "pressed",
-                    owner,
-                    "back_button_pressed",
-                    VariantArray::new_shared(),
-                    0
-                )
-                .unwrap();
+        back.connect(
+            "pressed",
+            owner,
+            "back_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
     }
 
     #[export]
@@ -269,8 +283,8 @@ impl MBSaveEntrance {
             "move_mb_contents",
             &[
                 Variant::from_str("SaveEntrance"),
-                Variant::from_str("SaveApp")
-            ]
+                Variant::from_str("SaveApp"),
+            ],
         );
     }
 
@@ -280,8 +294,8 @@ impl MBSaveEntrance {
             "move_mb_contents",
             &[
                 Variant::from_str("SaveEntrance"),
-                Variant::from_str("LoadApp")
-            ]
+                Variant::from_str("LoadApp"),
+            ],
         );
     }
 
@@ -289,10 +303,7 @@ impl MBSaveEntrance {
     fn back_button_pressed(&self, owner: &Node2D) {
         owner.emit_signal(
             "move_mb_contents",
-            &[
-                Variant::from_str("SaveEntrance"),
-                Variant::from_str("Home")
-            ]
+            &[Variant::from_str("SaveEntrance"), Variant::from_str("Home")],
         );
     }
 }
@@ -333,28 +344,29 @@ impl MBSaveApp {
         godot_print!("MBSaveApp ready");
 
         let back = get_node_auto!(owner, "Back", TextureButton);
-        back
-            .connect(
-                "pressed",
-                owner,
-                "back_button_pressed",
-                VariantArray::new_shared(),
-                0
-            )
-            .unwrap();
+        back.connect(
+            "pressed",
+            owner,
+            "back_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
 
         let save_data_set = get_node_auto!(owner, "Scroll/VBox/SaveDataSet", Node2D);
-        unsafe { save_data_set.call("set_mode", &[Variant::from_bool(true)]); }
+        unsafe {
+            save_data_set.call("set_mode", &[Variant::from_bool(true)]);
+        }
     }
-    
+
     #[export]
     fn back_button_pressed(&self, owner: &Node2D) {
         owner.emit_signal(
             "move_mb_contents",
             &[
                 Variant::from_str("SaveApp"),
-                Variant::from_str("SaveEntrance")
-            ]
+                Variant::from_str("SaveEntrance"),
+            ],
         );
     }
 }
@@ -368,9 +380,7 @@ pub struct SaveEntry {
 #[methods]
 impl SaveEntry {
     fn new(_owner: &Node2D) -> Self {
-        SaveEntry {
-            save_mode: true,
-        }
+        SaveEntry { save_mode: true }
     }
 
     #[export]
@@ -389,7 +399,7 @@ impl SaveEntry {
                 owner,
                 "action_button_pressed",
                 VariantArray::new_shared(),
-                0
+                0,
             )
             .unwrap();
     }
@@ -400,17 +410,11 @@ impl SaveEntry {
 
         if self.save_mode {
             unsafe {
-                save_data_manager.call(
-                    "save",
-                    &[Variant::from_godot_string(&owner.name())]
-                );
+                save_data_manager.call("save", &[Variant::from_godot_string(&owner.name())]);
             }
         } else {
             unsafe {
-                save_data_manager.call(
-                    "load",
-                    &[Variant::from_godot_string(&owner.name())]
-                );
+                save_data_manager.call("load", &[Variant::from_godot_string(&owner.name())]);
             }
         }
     }
@@ -420,13 +424,11 @@ impl SaveEntry {
 #[inherit(Node2D)]
 pub struct SaveDataSet;
 
-
 #[methods]
 impl SaveDataSet {
     fn new(_owner: &Node2D) -> Self {
         SaveDataSet
     }
-
 
     #[export]
     fn _ready(&self, _owner: TRef<Node2D>) {
@@ -435,14 +437,20 @@ impl SaveDataSet {
 
     #[export]
     fn set_mode(&self, owner: &Node2D, save_mode: Variant) {
-        for entry in ["VBox/Entry1", "VBox/Entry2", "VBox/Entry3", "VBox/Entry4", "VBox/Entry5", "VBox/Entry6"] {
+        for entry in [
+            "VBox/Entry1",
+            "VBox/Entry2",
+            "VBox/Entry3",
+            "VBox/Entry4",
+            "VBox/Entry5",
+            "VBox/Entry6",
+        ] {
             let node = get_node_auto!(owner, entry, Node2D);
             unsafe {
                 node.call("set_mode", &[save_mode.clone()]);
-           }
+            }
         }
     }
-    
 }
 
 #[derive(NativeClass)]
@@ -481,28 +489,113 @@ impl MBLoadApp {
         godot_print!("MBSaveApp ready");
 
         let back = get_node_auto!(owner, "Back", TextureButton);
-        back
-            .connect(
-                "pressed",
-                owner,
-                "back_button_pressed",
-                VariantArray::new_shared(),
-                0
-            )
-            .unwrap();
+        back.connect(
+            "pressed",
+            owner,
+            "back_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
 
         let save_data_set = get_node_auto!(owner, "Scroll/VBox/SaveDataSet", Node2D);
-        unsafe { save_data_set.call("set_mode", &[Variant::from_bool(false)]); }
+        unsafe {
+            save_data_set.call("set_mode", &[Variant::from_bool(false)]);
+        }
     }
-    
+
     #[export]
     fn back_button_pressed(&self, owner: &Node2D) {
         owner.emit_signal(
             "move_mb_contents",
             &[
                 Variant::from_str("LoadApp"),
-                Variant::from_str("SaveEntrance")
-            ]
+                Variant::from_str("SaveEntrance"),
+            ],
         );
+    }
+}
+
+
+#[derive(NativeClass)]
+#[inherit(Container)]
+pub struct MBItemEntry;
+
+#[methods]
+impl MBItemEntry {
+    fn new(_owner: &Container) -> Self {
+        MBItemEntry
+    }
+
+    #[export]
+    fn _ready(&mut self, _owner: TRef<Container>) {
+        godot_print!("MBItemEntry ready");
+    }
+
+    #[export]
+    fn set_name(&self, owner: TRef<Container>, name: GodotString) {
+        let name_label = get_node_auto!(owner, "Name", Label);
+        name_label.set_text(name);
+    }
+
+    #[export]
+    fn set_count(&self, owner: TRef<Container>, count: Variant) {
+        let count_label = get_node_auto!(owner, "Count", Label);
+        count_label.set_text(GodotString::from_str(&format!("x{}", count.to_u64())));
+    }
+}
+
+#[derive(NativeClass)]
+#[inherit(Node2D)]
+pub struct MBItemList {
+    template: Option<Ref<PackedScene, ThreadLocal>>,
+}
+
+#[methods]
+impl MBItemList {
+    fn new(_owner: &Node2D) -> Self {
+        MBItemList {
+            template: None,
+        }
+    }
+
+    #[export]
+    fn _ready(&mut self, owner: TRef<Node2D>) {
+        godot_print!("MBItemList ready");
+
+        self.template = native_lib::load_scene("res://scene/home/magic-board/ItemEntry.tscn");
+        match &self.template {
+            Some(_scene) => godot_print!("Loaded child scene successfully!"),
+            None => godot_print!("Could not load child scene. Check name."),
+        }
+
+        let template = if let Some(template) = &self.template {
+            template
+        } else {
+            godot_print!("Cannot spawn a child because we couldn't load the template scene");
+            return;
+        };
+        let vbox = get_node_auto!(owner, "WholeVBox/ItemListVBox", VBoxContainer);
+
+        control_save_data_mut(|save_data|{
+            save_data.add_items(native_lib::save_data::Item::Soil(SoilItem::Kurotsuchi), 3);
+            
+            for (line, data) in save_data.get_items().iter().enumerate().take(4) {
+                match native_lib::instance_scene::<Container>(template) {
+                    Ok(item_entry) => {
+                        let key_str = format!("Entry{}", line);
+                        item_entry.set_name(&key_str);
+
+                        unsafe {
+                            item_entry.call("set_name", &[Variant::from_str(data.0.get_display_name())]);
+                            item_entry.call("set_count", &[Variant::from_u64(*data.1 as u64)]);
+                        }
+                        
+                        vbox.add_child(item_entry.into_shared(), false);
+                    }
+                    Err(err) => godot_print!("Could not instance Child : {:?}", err),
+                }
+            }
+        });
     }
 }

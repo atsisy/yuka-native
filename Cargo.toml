@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 gdnative = "0.9.3"
+toml = "0.5.8"
+serde = { version = "1.0.126", features = ["derive"] }
 
 [lib]
 crate-type = ["cdylib"]

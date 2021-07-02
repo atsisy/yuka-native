@@ -1,60 +1,29 @@
-use gdnative::prelude::*;
 use gdnative::core_types::ToVariant;
+use gdnative::prelude::*;
 
+pub mod native_lib;
 pub mod scene;
 pub mod utils;
-pub mod native_lib;
-
-#[derive(NativeClass)]
-#[inherit(Node)]
-pub struct SaveDataManager;
-
-#[methods]
-impl SaveDataManager {
-    fn new(_owner: &Node) -> Self {
-        SaveDataManager
-    }
-
-    #[export]
-    fn _ready(&mut self, _owner: &Node) {
-        godot_print!("SaveDataManager singleton loaded");
-    }
-
-    #[export]
-    fn save(&mut self, _owner: &Node, file_name: GodotString) {
-        godot_print!("save! -> {}", file_name.to_string());
-    }
-
-    #[export]
-    fn load(&mut self, _owner: &Node, file_name: GodotString) {
-        godot_print!("load! -> {}", file_name.to_string());
-    }
-}
 
 pub fn goto_scene(owner: &Node, path: &str) {
     let global = owner.get_node("/root/Global").unwrap();
-    let global = unsafe {
-	    global.assume_safe()
-    };
-    
+    let global = unsafe { global.assume_safe() };
+
     unsafe {
         global.call("goto_scene", &[path.to_string().to_variant()]);
     }
 }
 
 pub fn quit_game(global: Ref<Node, Shared>) {
-    let global = unsafe {
-        global.assume_safe()
-    };
-    
+    let global = unsafe { global.assume_safe() };
+
     unsafe {
         global.call("quit_game", &[]);
     }
 }
 
-
 fn init(handle: InitHandle) {
-    handle.add_class::<SaveDataManager>();
+    handle.add_class::<native_lib::save_data::SaveDataManager>();
     handle.add_class::<crate::scene::title::TitleScene>();
     handle.add_class::<crate::scene::title::TitleEntries>();
     handle.add_class::<crate::utils::textbox::TextBox>();
@@ -67,6 +36,8 @@ fn init(handle: InitHandle) {
     handle.add_class::<crate::scene::home::MBLoadApp>();
     handle.add_class::<crate::scene::home::SaveEntry>();
     handle.add_class::<crate::scene::home::SaveDataSet>();
+    handle.add_class::<crate::scene::home::MBItemList>();
+    handle.add_class::<crate::scene::home::MBItemEntry>();
 }
 
 godot_init!(init);

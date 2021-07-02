@@ -1,2 +1,2 @@
-pub mod title;
 pub mod home;
+pub mod title;
