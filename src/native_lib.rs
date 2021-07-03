@@ -1,4 +1,5 @@
 pub mod save_data;
+pub mod crypt;
 
 use gdnative::prelude::*;
 

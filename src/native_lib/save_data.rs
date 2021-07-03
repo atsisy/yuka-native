@@ -1,7 +1,9 @@
 use gdnative::prelude::*;
 
 use serde::{Deserialize, Serialize};
-use std::{cell::RefCell, collections::HashMap};
+use serde_with::{serde_as, DisplayFromStr};
+
+use std::{cell::RefCell, collections::HashMap, fmt::Display, io::{Read, Write}, str::FromStr};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum SoilItem {
@@ -16,6 +18,16 @@ impl SoilItem {
             Self::Fuyodo => "腐葉土",
             Self::Kurotsuchi => "黒土",
             Self::Baiyodo => "培養土",
+        }
+    }
+}
+
+impl Display for SoilItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Fuyodo => write!(f, "腐葉土"),
+            Self::Kurotsuchi => write!(f, "黒土"),
+            Self::Baiyodo => write!(f, "培養土"),
         }
     }
 }
@@ -39,6 +51,17 @@ impl FertilizerItem {
     }
 }
 
+impl Display for FertilizerItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Aburakasu => write!(f, "油粕"),
+            Self::Gyohi => write!(f, "魚肥"),
+            Self::ShimoGoe => write!(f, "下肥"),
+            Self::Chemical => write!(f, "化学肥料"),
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Item {
     Soil(SoilItem),
@@ -54,8 +77,36 @@ impl Item {
     }
 }
 
+impl Display for Item {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Soil(soil) => soil.fmt(f),
+            Self::Fertilizer(fert) => fert.fmt(f),
+        }
+    }
+}
+
+impl FromStr for Item {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "腐葉土" => Ok(Item::Soil(SoilItem::Fuyodo)),
+            "黒土" => Ok(Item::Soil(SoilItem::Kurotsuchi)),
+            "培養土" => Ok(Item::Soil(SoilItem::Baiyodo)),
+            "油粕" => Ok(Item::Fertilizer(FertilizerItem::Aburakasu)),
+            "魚肥" => Ok(Item::Fertilizer(FertilizerItem::Gyohi)),
+            "下肥" => Ok(Item::Fertilizer(FertilizerItem::ShimoGoe)),
+            "化学肥料" => Ok(Item::Fertilizer(FertilizerItem::Chemical)),
+            _ => Err("BUG".to_string())
+        }
+    }
+}
+
+#[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ItemManager {
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
     items: HashMap<Item, usize>,
 }
 
@@ -120,13 +171,49 @@ impl SaveDataManager {
     }
 
     #[export]
-    fn save(&mut self, _owner: &Node, file_name: GodotString) {
-        godot_print!("save! -> {}", file_name.to_string());
+    fn save(&mut self, _owner: &Node, file_name: Variant) {
+        control_save_data(|save_data| {
+            let mut file = std::fs::File::create(file_name.to_string()).unwrap();
+
+            file.write_all(
+            crate::native_lib::crypt::crypt_str(
+                &toml::to_string(save_data).unwrap()
+                )
+                .unwrap()
+                .as_slice(),
+            )
+            .unwrap();
+            file.flush().unwrap();
+        });
     }
 
     #[export]
     fn load(&mut self, _owner: &Node, file_name: GodotString) {
         godot_print!("load! -> {}", file_name.to_string());
+
+        let loaded_save_data: NativeSaveData = match std::fs::File::open(file_name.to_string().as_str()) {
+            Ok(mut file) => {
+                let mut buf = Vec::new();
+                match file.read_to_end(&mut buf) {
+                    Ok(_) => (),
+                    Err(_) => return,
+                }
+
+                let content = crate::native_lib::crypt::decrypt_str(&buf);
+
+                let loaded_save_data = toml::from_str(&content.unwrap());
+
+                match loaded_save_data {
+                    Ok(loaded_save_data) => loaded_save_data,
+                    Err(_) => return,
+                }
+            }
+            Err(_) => return,
+        };
+
+        CURRENT_SAVEDATA.with(|current_save_data| {
+            current_save_data.replace_with(|_| Some(loaded_save_data));
+        });
     }
 
     #[export]

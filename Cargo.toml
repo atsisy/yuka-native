@@ -10,6 +10,10 @@ edition = "2018"
 gdnative = "0.9.3"
 toml = "0.5.8"
 serde = { version = "1.0.126", features = ["derive"] }
+base64 = "0.13.0"
+rust-crypto = "0.2.36"
+aes-stream = "0.2.1"
+serde_with = "1.9.4"
 
 [lib]
 crate-type = ["cdylib"]

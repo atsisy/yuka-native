@@ -106,7 +106,7 @@ impl MagicBoardHome {
     fn profile_pressed(&self, owner: &Node2D) {
         owner.emit_signal(
             "move_mb_contents",
-            &[Variant::from_str("Home"), Variant::from_str("profile")],
+            &[Variant::from_str("Home"), Variant::from_str("ItemList")],
         );
     }
 
@@ -176,6 +176,18 @@ impl MagicBoard {
                 0,
             )
             .unwrap();
+
+        let item_list = get_node_auto!(owner, "Background/ItemList", Node2D);
+            item_list
+                .connect(
+                    "move_mb_contents",
+                    owner,
+                    "move_mb_contents_handler",
+                    VariantArray::new_shared(),
+                    0,
+                )
+                .unwrap();
+            
     }
 
     fn set_child_node_visibility(&self, owner: &Node2D, name: &str, visible: bool) {
@@ -184,6 +196,7 @@ impl MagicBoard {
             "SaveEntrance" => get_node_auto!(owner, "Background/SaveEntrance", Node2D),
             "SaveApp" => get_node_auto!(owner, "Background/MBSaveApp", Node2D),
             "LoadApp" => get_node_auto!(owner, "Background/MBLoadApp", Node2D),
+            "ItemList" => get_node_auto!(owner, "Background/ItemList", Node2D),
             _ => return,
         };
 
@@ -547,21 +560,53 @@ impl MBItemEntry {
 
 #[derive(NativeClass)]
 #[inherit(Node2D)]
+#[register_with(Self::register_signals)]
 pub struct MBItemList {
     template: Option<Ref<PackedScene, ThreadLocal>>,
+    page: usize,
 }
 
 #[methods]
 impl MBItemList {
+    fn register_signals(builder: &ClassBuilder<Self>) {
+        builder.add_signal(Signal {
+            name: "move_mb_contents",
+            args: &[
+                SignalArgument {
+                    name: "before",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+                SignalArgument {
+                    name: "after",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+            ],
+        });
+    }
+
     fn new(_owner: &Node2D) -> Self {
         MBItemList {
             template: None,
+            page: 0,
         }
     }
 
     #[export]
     fn _ready(&mut self, owner: TRef<Node2D>) {
         godot_print!("MBItemList ready");
+
+        let back_button = get_node_auto!(owner, "Back", TextureButton);
+        back_button.connect(
+            "pressed",
+            owner,
+            "back_button_pressed",
+            VariantArray::new_shared(),
+            0
+        ).unwrap();
 
         self.template = native_lib::load_scene("res://scene/home/magic-board/ItemEntry.tscn");
         match &self.template {
@@ -577,8 +622,12 @@ impl MBItemList {
         };
         let vbox = get_node_auto!(owner, "WholeVBox/ItemListVBox", VBoxContainer);
 
+
+        //
+        // 1ページ目の準備
+        //
         control_save_data_mut(|save_data|{
-            save_data.add_items(native_lib::save_data::Item::Soil(SoilItem::Kurotsuchi), 3);
+            save_data.add_items(native_lib::save_data::Item::Soil(SoilItem::Kurotsuchi), 1);
             
             for (line, data) in save_data.get_items().iter().enumerate().take(4) {
                 match native_lib::instance_scene::<Container>(template) {
@@ -597,5 +646,13 @@ impl MBItemList {
                 }
             }
         });
+    }
+
+    #[export]
+    fn back_button_pressed(&self, owner: &Node2D) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("ItemList"), Variant::from_str("Home")],
+        );
     }
 }
