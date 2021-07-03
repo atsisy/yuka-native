@@ -1,6 +1,6 @@
 use gdnative::{api::{Container, TextureButton, VBoxContainer}, prelude::*};
 
-use crate::{get_node_auto, native_lib::{self, save_data::{SoilItem, control_save_data, control_save_data_mut}}, quit_game};
+use crate::{get_node_auto, native_lib::{self, save_data::{SoilItem, control_save_data, control_save_data_mut}}};
 
 #[derive(NativeClass)]
 #[inherit(Node2D)]
@@ -100,6 +100,11 @@ impl MagicBoardHome {
                 0,
             )
             .unwrap();
+        
+        let date = get_node_auto!(owner, "Date", Label);
+        control_save_data(|save_data| {
+            date.set_text(GodotString::from_str(save_data.get_date().to_short_string()));
+        });
     }
 
     #[export]

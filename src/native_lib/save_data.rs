@@ -5,6 +5,8 @@ use serde_with::{serde_as, DisplayFromStr};
 
 use std::{cell::RefCell, collections::HashMap, fmt::Display, io::{Read, Write}, str::FromStr};
 
+use super::GensoDate;
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum SoilItem {
     Fuyodo,
@@ -133,12 +135,14 @@ impl ItemManager {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NativeSaveData {
     items: ItemManager,
+    date: GensoDate,
 }
 
 impl NativeSaveData {
     pub fn new() -> Self {
         NativeSaveData {
             items: ItemManager::new(),
+            date: GensoDate::new(112, 5, 1),
         }
     }
 
@@ -148,6 +152,10 @@ impl NativeSaveData {
 
     pub fn add_items(&mut self, item: Item, count: usize) {
         self.items.add_items(item, count);
+    }
+
+    pub fn get_date(&self) -> &GensoDate {
+        &self.date
     }
 }
 
