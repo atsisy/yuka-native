@@ -683,6 +683,8 @@ impl MBItemList {
                 }
             }
         });
+
+        get_node_auto!(owner, "WholeVBox/PageNumber", Label).set_text(format!("{}", self.page));
     }
 
     #[export]
@@ -694,19 +696,25 @@ impl MBItemList {
     }
 
     #[export]
-    fn next_button_pressed(&self, owner: &Node2D) {
-        owner.emit_signal(
-            "move_mb_contents",
-            &[Variant::from_str("ItemList"), Variant::from_str("Home")],
-        );
+    fn next_button_pressed(&mut self, owner: TRef<Node2D>) {
+        let pages = control_save_data(|save_data| {
+            save_data.get_items().size() / 6
+        });
+
+        if pages > self.page {
+            self.page += 1;
+        }
+
+        self.update_item_list(owner);
     }
 
     #[export]
-    fn prev_button_pressed(&self, owner: &Node2D) {
-        owner.emit_signal(
-            "move_mb_contents",
-            &[Variant::from_str("ItemList"), Variant::from_str("Home")],
-        );
+    fn prev_button_pressed(&mut self, owner: TRef<Node2D>) {
+        if self.page > 0 {
+            self.page -= 1;
+        }
+
+        self.update_item_list(owner);
     }
 
     #[export]

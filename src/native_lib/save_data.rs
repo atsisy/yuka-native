@@ -136,6 +136,10 @@ impl ItemManager {
     pub fn iter(&self) -> std::collections::hash_map::Iter<Item, usize> {
         self.items.iter()
     }
+
+    pub fn size(&self) -> usize {
+        self.items.len()
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
