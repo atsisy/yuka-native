@@ -1,5 +1,5 @@
-pub mod save_data;
 pub mod crypt;
+pub mod save_data;
 
 use gdnative::prelude::*;
 
@@ -86,20 +86,11 @@ impl GensoDate {
     }
 
     pub fn to_string(&self) -> String {
-        format!(
-            "{}季 {}月 {}日",
-            self.season,
-            self.month,
-            self.day
-        )
+        format!("{}季 {}月 {}日", self.season, self.month, self.day)
     }
 
     pub fn to_short_string(&self) -> String {
-        format!(
-            "{}月{}日",
-            self.month,
-            self.day
-        )
+        format!("{}月{}日", self.month, self.day)
     }
 
     pub fn to_month_string_eng_short(&self) -> String {
@@ -200,7 +191,7 @@ impl GensoDate {
 
     pub fn is_week_first(&self) -> bool {
         let diff = self.diff_day(&GensoDate::new(112, 7, 23));
-	    println!("diff -> {}", diff);
+        println!("diff -> {}", diff);
         diff % 7 == 0
     }
 

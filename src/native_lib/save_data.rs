@@ -3,7 +3,13 @@ use gdnative::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use std::{cell::RefCell, collections::HashMap, fmt::Display, io::{Read, Write}, str::FromStr};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fmt::Display,
+    io::{Read, Write},
+    str::FromStr,
+};
 
 use super::GensoDate;
 
@@ -100,7 +106,7 @@ impl FromStr for Item {
             "魚肥" => Ok(Item::Fertilizer(FertilizerItem::Gyohi)),
             "下肥" => Ok(Item::Fertilizer(FertilizerItem::ShimoGoe)),
             "化学肥料" => Ok(Item::Fertilizer(FertilizerItem::Chemical)),
-            _ => Err("BUG".to_string())
+            _ => Err("BUG".to_string()),
         }
     }
 }
@@ -184,11 +190,9 @@ impl SaveDataManager {
             let mut file = std::fs::File::create(file_name.to_string()).unwrap();
 
             file.write_all(
-            crate::native_lib::crypt::crypt_str(
-                &toml::to_string(save_data).unwrap()
-                )
-                .unwrap()
-                .as_slice(),
+                crate::native_lib::crypt::crypt_str(&toml::to_string(save_data).unwrap())
+                    .unwrap()
+                    .as_slice(),
             )
             .unwrap();
             file.flush().unwrap();
@@ -199,25 +203,26 @@ impl SaveDataManager {
     fn load(&mut self, _owner: &Node, file_name: GodotString) {
         godot_print!("load! -> {}", file_name.to_string());
 
-        let loaded_save_data: NativeSaveData = match std::fs::File::open(file_name.to_string().as_str()) {
-            Ok(mut file) => {
-                let mut buf = Vec::new();
-                match file.read_to_end(&mut buf) {
-                    Ok(_) => (),
-                    Err(_) => return,
+        let loaded_save_data: NativeSaveData =
+            match std::fs::File::open(file_name.to_string().as_str()) {
+                Ok(mut file) => {
+                    let mut buf = Vec::new();
+                    match file.read_to_end(&mut buf) {
+                        Ok(_) => (),
+                        Err(_) => return,
+                    }
+
+                    let content = crate::native_lib::crypt::decrypt_str(&buf);
+
+                    let loaded_save_data = toml::from_str(&content.unwrap());
+
+                    match loaded_save_data {
+                        Ok(loaded_save_data) => loaded_save_data,
+                        Err(_) => return,
+                    }
                 }
-
-                let content = crate::native_lib::crypt::decrypt_str(&buf);
-
-                let loaded_save_data = toml::from_str(&content.unwrap());
-
-                match loaded_save_data {
-                    Ok(loaded_save_data) => loaded_save_data,
-                    Err(_) => return,
-                }
-            }
-            Err(_) => return,
-        };
+                Err(_) => return,
+            };
 
         CURRENT_SAVEDATA.with(|current_save_data| {
             current_save_data.replace_with(|_| Some(loaded_save_data));
@@ -234,17 +239,15 @@ impl SaveDataManager {
 }
 
 pub fn control_save_data<F, R>(f: F) -> R
-where F: FnOnce(&NativeSaveData) -> R
+where
+    F: FnOnce(&NativeSaveData) -> R,
 {
-    CURRENT_SAVEDATA.with(|current_save_data| {
-        f(current_save_data.borrow().as_ref().unwrap())
-    })
+    CURRENT_SAVEDATA.with(|current_save_data| f(current_save_data.borrow().as_ref().unwrap()))
 }
 
 pub fn control_save_data_mut<F, R>(f: F) -> R
-where F: FnOnce(&mut NativeSaveData) -> R
+where
+    F: FnOnce(&mut NativeSaveData) -> R,
 {
-    CURRENT_SAVEDATA.with(|current_save_data| {
-        f(current_save_data.borrow_mut().as_mut().unwrap())
-    })
+    CURRENT_SAVEDATA.with(|current_save_data| f(current_save_data.borrow_mut().as_mut().unwrap()))
 }

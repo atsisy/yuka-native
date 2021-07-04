@@ -1,6 +1,9 @@
-use gdnative::{api::{Container, TextureButton, VBoxContainer}, prelude::*};
+use gdnative::{
+    api::{Container, TextureButton},
+    prelude::*,
+};
 
-use crate::{get_node_auto, native_lib::{self, save_data::{SoilItem, control_save_data, control_save_data_mut}}};
+use crate::{get_node_auto, native_lib::{save_data::{Item, SoilItem, control_save_data, control_save_data_mut}}};
 
 #[derive(NativeClass)]
 #[inherit(Node2D)]
@@ -100,10 +103,12 @@ impl MagicBoardHome {
                 0,
             )
             .unwrap();
-        
+
         let date = get_node_auto!(owner, "Date", Label);
         control_save_data(|save_data| {
-            date.set_text(GodotString::from_str(save_data.get_date().to_short_string()));
+            date.set_text(GodotString::from_str(
+                save_data.get_date().to_short_string(),
+            ));
         });
     }
 
@@ -183,16 +188,15 @@ impl MagicBoard {
             .unwrap();
 
         let item_list = get_node_auto!(owner, "Background/ItemList", Node2D);
-            item_list
-                .connect(
-                    "move_mb_contents",
-                    owner,
-                    "move_mb_contents_handler",
-                    VariantArray::new_shared(),
-                    0,
-                )
-                .unwrap();
-            
+        item_list
+            .connect(
+                "move_mb_contents",
+                owner,
+                "move_mb_contents_handler",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
     }
 
     fn set_child_node_visibility(&self, owner: &Node2D, name: &str, visible: bool) {
@@ -226,6 +230,20 @@ impl MagicBoard {
 
         self.set_child_node_visibility(owner, prev.as_str(), false);
         self.set_child_node_visibility(owner, next.as_str(), true);
+
+        let target = match next.as_str() {
+            "Home" => get_node_auto!(owner, "Background/MBHome", Node2D),
+            "SaveEntrance" => get_node_auto!(owner, "Background/SaveEntrance", Node2D),
+            "SaveApp" => get_node_auto!(owner, "Background/MBSaveApp", Node2D),
+            "LoadApp" => get_node_auto!(owner, "Background/MBLoadApp", Node2D),
+            "ItemList" => get_node_auto!(owner, "Background/ItemList", Node2D),
+            _ => return,
+        };
+        unsafe {
+            if target.has_method("root_app_update_handler") {
+                target.call("root_app_update_handler", &[]);
+            }
+        }
     }
 }
 
@@ -534,7 +552,6 @@ impl MBLoadApp {
     }
 }
 
-
 #[derive(NativeClass)]
 #[inherit(Container)]
 pub struct MBItemEntry;
@@ -567,7 +584,6 @@ impl MBItemEntry {
 #[inherit(Node2D)]
 #[register_with(Self::register_signals)]
 pub struct MBItemList {
-    template: Option<Ref<PackedScene, ThreadLocal>>,
     page: usize,
 }
 
@@ -594,10 +610,7 @@ impl MBItemList {
     }
 
     fn new(_owner: &Node2D) -> Self {
-        MBItemList {
-            template: None,
-            page: 0,
-        }
+        MBItemList { page: 0 }
     }
 
     #[export]
@@ -605,49 +618,68 @@ impl MBItemList {
         godot_print!("MBItemList ready");
 
         let back_button = get_node_auto!(owner, "Back", TextureButton);
-        back_button.connect(
-            "pressed",
-            owner,
-            "back_button_pressed",
-            VariantArray::new_shared(),
-            0
-        ).unwrap();
+        back_button
+            .connect(
+                "pressed",
+                owner,
+                "back_button_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
 
-        self.template = native_lib::load_scene("res://scene/home/magic-board/ItemEntry.tscn");
-        match &self.template {
-            Some(_scene) => godot_print!("Loaded child scene successfully!"),
-            None => godot_print!("Could not load child scene. Check name."),
+        get_node_auto!(owner, "WholeVBox/PageButtonContainer/Next", Button)
+            .connect(
+                "pressed",
+                owner,
+                "next_button_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
+
+        get_node_auto!(owner, "WholeVBox/PageButtonContainer/Prev", Button)
+            .connect(
+                "pressed",
+                owner,
+                "prev_button_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
+
+        get_node_auto!(owner, "Back", TextureButton)
+            .connect(
+                "pressed",
+                owner,
+                "next_button_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
+
+        self.update_item_list(owner);
+    }
+
+    fn hide_all_item_entries(&self, owner: TRef<Node2D>) {
+        for i in 1..=6 {
+            get_node_auto!(owner, format!("WholeVBox/ItemListVBox/Line{}", i).as_str(), Container).hide();
         }
+    }
 
-        let template = if let Some(template) = &self.template {
-            template
-        } else {
-            godot_print!("Cannot spawn a child because we couldn't load the template scene");
-            return;
-        };
-        let vbox = get_node_auto!(owner, "WholeVBox/ItemListVBox", VBoxContainer);
+    fn update_item_list(&self, owner: TRef<Node2D>) {
+        self.hide_all_item_entries(owner);
+        control_save_data_mut(|save_data| {
+            save_data.add_items(Item::Soil(SoilItem::Fuyodo), 2);
+            for (line, data) in save_data.get_items().iter().enumerate().take(6) {
+                let key_str = format!("WholeVBox/ItemListVBox/Line{}", line + 1);
+                let item_entry = get_node_auto!(owner, key_str.as_str(), Container);
 
+                item_entry.show();
 
-        //
-        // 1ページ目の準備
-        //
-        control_save_data_mut(|save_data|{
-            save_data.add_items(native_lib::save_data::Item::Soil(SoilItem::Kurotsuchi), 1);
-            
-            for (line, data) in save_data.get_items().iter().enumerate().take(4) {
-                match native_lib::instance_scene::<Container>(template) {
-                    Ok(item_entry) => {
-                        let key_str = format!("Entry{}", line);
-                        item_entry.set_name(&key_str);
-
-                        unsafe {
-                            item_entry.call("set_name", &[Variant::from_str(data.0.get_display_name())]);
-                            item_entry.call("set_count", &[Variant::from_u64(*data.1 as u64)]);
-                        }
-                        
-                        vbox.add_child(item_entry.into_shared(), false);
-                    }
-                    Err(err) => godot_print!("Could not instance Child : {:?}", err),
+                unsafe {
+                    item_entry.call("set_name", &[Variant::from_str(data.0.get_display_name())]);
+                    item_entry.call("set_count", &[Variant::from_u64(*data.1 as u64)]);
                 }
             }
         });
@@ -659,5 +691,26 @@ impl MBItemList {
             "move_mb_contents",
             &[Variant::from_str("ItemList"), Variant::from_str("Home")],
         );
+    }
+
+    #[export]
+    fn next_button_pressed(&self, owner: &Node2D) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("ItemList"), Variant::from_str("Home")],
+        );
+    }
+
+    #[export]
+    fn prev_button_pressed(&self, owner: &Node2D) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("ItemList"), Variant::from_str("Home")],
+        );
+    }
+
+    #[export]
+    fn root_app_update_handler(&self, owner: TRef<Node2D>) {
+        self.update_item_list(owner);
     }
 }
