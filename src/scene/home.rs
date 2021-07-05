@@ -3,7 +3,7 @@ use gdnative::{
     prelude::*,
 };
 
-use crate::{get_node_auto, native_lib::{save_data::{Item, SoilItem, control_save_data, control_save_data_mut}}};
+use crate::{get_node_auto, native_lib::save_data::{Item, SaveDataManager, SoilItem, control_save_data, control_save_data_mut}};
 
 #[derive(NativeClass)]
 #[inherit(Node2D)]
@@ -428,6 +428,16 @@ impl SaveEntry {
     fn _ready(&mut self, owner: TRef<Node2D>) {
         godot_print!("SaveEntry ready");
 
+        let name = get_node_auto!(owner, "Button/Name", Label);
+        let date = get_node_auto!(owner, "Button/Date", Label);
+
+        if let Some(save_data) = SaveDataManager::load_native_save_data(owner.name()) {
+            date.set_text(save_data.get_real_date().to_string());
+            name.set_text(&format!("{}", owner.name()));
+        } else {
+            name.set_text("空");
+        }
+
         let action = get_node_auto!(owner, "Button", Button);
         action
             .connect(
@@ -663,7 +673,12 @@ impl MBItemList {
 
     fn hide_all_item_entries(&self, owner: TRef<Node2D>) {
         for i in 1..=6 {
-            get_node_auto!(owner, format!("WholeVBox/ItemListVBox/Line{}", i).as_str(), Container).hide();
+            get_node_auto!(
+                owner,
+                format!("WholeVBox/ItemListVBox/Line{}", i).as_str(),
+                Container
+            )
+            .hide();
         }
     }
 
@@ -684,7 +699,13 @@ impl MBItemList {
             }
         });
 
-        get_node_auto!(owner, "WholeVBox/PageNumber", Label).set_text(format!("{}", self.page));
+        let pages = control_save_data(|save_data| save_data.get_items().size() / 6);
+
+        get_node_auto!(owner, "WholeVBox/PageNumber", Label).set_text(format!(
+            "{}/{}",
+            self.page + 1,
+            pages + 1
+        ));
     }
 
     #[export]
@@ -697,9 +718,7 @@ impl MBItemList {
 
     #[export]
     fn next_button_pressed(&mut self, owner: TRef<Node2D>) {
-        let pages = control_save_data(|save_data| {
-            save_data.get_items().size() / 6
-        });
+        let pages = control_save_data(|save_data| save_data.get_items().size() / 6);
 
         if pages > self.page {
             self.page += 1;

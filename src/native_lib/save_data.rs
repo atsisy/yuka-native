@@ -144,6 +144,7 @@ impl ItemManager {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NativeSaveData {
+    real_date: String,
     items: ItemManager,
     date: GensoDate,
 }
@@ -153,6 +154,7 @@ impl NativeSaveData {
         NativeSaveData {
             items: ItemManager::new(),
             date: GensoDate::new(112, 5, 1),
+            real_date: "None".to_string(),
         }
     }
 
@@ -166,6 +168,10 @@ impl NativeSaveData {
 
     pub fn get_date(&self) -> &GensoDate {
         &self.date
+    }
+
+    pub fn get_real_date(&self) -> &str {
+        self.real_date.as_str()
     }
 }
 
@@ -190,7 +196,9 @@ impl SaveDataManager {
 
     #[export]
     fn save(&mut self, _owner: &Node, file_name: Variant) {
-        control_save_data(|save_data| {
+        control_save_data_mut(|save_data| {
+            save_data.real_date = chrono::Local::today().to_string();
+
             let mut file = std::fs::File::create(file_name.to_string()).unwrap();
 
             file.write_all(
@@ -205,32 +213,39 @@ impl SaveDataManager {
 
     #[export]
     fn load(&mut self, _owner: &Node, file_name: GodotString) {
-        godot_print!("load! -> {}", file_name.to_string());
+        let loaded_save_data = Self::load_native_save_data(file_name);
 
-        let loaded_save_data: NativeSaveData =
-            match std::fs::File::open(file_name.to_string().as_str()) {
-                Ok(mut file) => {
-                    let mut buf = Vec::new();
-                    match file.read_to_end(&mut buf) {
-                        Ok(_) => (),
-                        Err(_) => return,
-                    }
-
-                    let content = crate::native_lib::crypt::decrypt_str(&buf);
-
-                    let loaded_save_data = toml::from_str(&content.unwrap());
-
-                    match loaded_save_data {
-                        Ok(loaded_save_data) => loaded_save_data,
-                        Err(_) => return,
-                    }
-                }
-                Err(_) => return,
-            };
+        if loaded_save_data.is_none() {
+            return;
+        }
 
         CURRENT_SAVEDATA.with(|current_save_data| {
-            current_save_data.replace_with(|_| Some(loaded_save_data));
+            current_save_data.replace_with(|_| Some(loaded_save_data.unwrap()));
         });
+    }
+
+    pub fn load_native_save_data(file_name: GodotString) -> Option<NativeSaveData> {
+        godot_print!("load! -> {}", file_name.to_string());
+
+        match std::fs::File::open(file_name.to_string().as_str()) {
+            Ok(mut file) => {
+                let mut buf = Vec::new();
+                match file.read_to_end(&mut buf) {
+                    Ok(_) => (),
+                    Err(_) => return None,
+                }
+
+                let content = crate::native_lib::crypt::decrypt_str(&buf);
+
+                let loaded_save_data = toml::from_str(&content.unwrap());
+
+                match loaded_save_data {
+                    Ok(loaded_save_data) => Some(loaded_save_data),
+                    Err(_) => None,
+                }
+            }
+            Err(_) => None,
+        }
     }
 
     #[export]
