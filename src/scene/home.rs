@@ -239,6 +239,7 @@ impl MagicBoard {
             "ItemList" => get_node_auto!(owner, "Background/ItemList", Node2D),
             _ => return,
         };
+
         unsafe {
             if target.has_method("root_app_update_handler") {
                 target.call("root_app_update_handler", &[]);
@@ -405,6 +406,14 @@ impl MBSaveApp {
             ],
         );
     }
+
+    #[export]
+    fn root_app_update_handler(&self, owner: TRef<Node2D>) {
+        let save_data_set = get_node_auto!(owner, "Scroll/VBox/SaveDataSet", Node2D);
+        unsafe {
+            save_data_set.call("update", &[]);
+        }
+    }
 }
 
 #[derive(NativeClass)]
@@ -428,15 +437,7 @@ impl SaveEntry {
     fn _ready(&mut self, owner: TRef<Node2D>) {
         godot_print!("SaveEntry ready");
 
-        let name = get_node_auto!(owner, "Button/Name", Label);
-        let date = get_node_auto!(owner, "Button/Date", Label);
-
-        if let Some(save_data) = SaveDataManager::load_native_save_data(owner.name()) {
-            date.set_text(save_data.get_real_date().to_string());
-            name.set_text(&format!("{}", owner.name()));
-        } else {
-            name.set_text("空");
-        }
+        self.update(owner);
 
         let action = get_node_auto!(owner, "Button", Button);
         action
@@ -451,17 +452,31 @@ impl SaveEntry {
     }
 
     #[export]
-    fn action_button_pressed(&self, owner: &Node2D) {
+    fn action_button_pressed(&self, owner: TRef<Node2D>) {
         let save_data_manager = get_node_auto!(owner, "/root/SaveDataManager", Node);
 
         if self.save_mode {
             unsafe {
                 save_data_manager.call("save", &[Variant::from_godot_string(&owner.name())]);
             }
+            self.update(owner);
         } else {
             unsafe {
                 save_data_manager.call("load", &[Variant::from_godot_string(&owner.name())]);
             }
+        }
+    }
+
+    #[export]
+    fn update(&self, owner: TRef<Node2D>) {
+        let name = get_node_auto!(owner, "Button/Name", Label);
+        let date = get_node_auto!(owner, "Button/Date", Label);
+
+        if let Some(save_data) = SaveDataManager::load_native_save_data(owner.name()) {
+            date.set_text(save_data.get_real_date().to_string());
+            name.set_text(&format!("{}", owner.name()));
+        } else {
+            name.set_text("空");
         }
     }
 }
@@ -494,6 +509,23 @@ impl SaveDataSet {
             let node = get_node_auto!(owner, entry, Node2D);
             unsafe {
                 node.call("set_mode", &[save_mode.clone()]);
+            }
+        }
+    }
+
+    #[export]
+    fn update(&self, owner: TRef<Node2D>) {
+        for entry in [
+            "VBox/Entry1",
+            "VBox/Entry2",
+            "VBox/Entry3",
+            "VBox/Entry4",
+            "VBox/Entry5",
+            "VBox/Entry6",
+        ] {
+            let node = get_node_auto!(owner, entry, Node2D);
+            unsafe {
+                node.call("update", &[]);
             }
         }
     }
@@ -559,6 +591,14 @@ impl MBLoadApp {
                 Variant::from_str("SaveEntrance"),
             ],
         );
+    }
+
+    #[export]
+    fn root_app_update_handler(&self, owner: TRef<Node2D>) {
+        let save_data_set = get_node_auto!(owner, "Scroll/VBox/SaveDataSet", Node2D);
+        unsafe {
+            save_data_set.call("update", &[]);
+        }
     }
 }
 
