@@ -1,6 +1,6 @@
 pub mod textbox;
 
-use gdnative::{api::TextureRect, prelude::*};
+use gdnative::{api::{AnimationPlayer, TextureRect}, prelude::*};
 
 use crate::get_node_auto;
 
@@ -50,5 +50,34 @@ impl TextureDigit {
         get_node_auto!(owner, "Eight", TextureRect).hide();
         get_node_auto!(owner, "Nine", TextureRect).hide();
         get_node_auto!(owner, "Zero", TextureRect).hide();
+    }
+}
+
+
+#[derive(NativeClass)]
+#[inherit(Node2D)]
+pub struct SceneTransition;
+
+#[methods]
+impl SceneTransition {
+    fn new(_owner: &Node2D) -> Self {
+        SceneTransition
+    }
+
+    #[export]
+    fn _ready(&self, _owner: &Node2D) {
+        godot_print!("SceneTransition ready");
+    }
+
+    #[export]
+    fn start_show_trans_anime(&self, owner: &Node2D) {
+        get_node_auto!(owner, "Texture/AnimationPlayer", AnimationPlayer)
+            .play("Show", -1.0, 1.0, false);
+    }
+
+    #[export]
+    fn start_hide_trans_anime(&self, owner: &Node2D) {
+        get_node_auto!(owner, "Texture/AnimationPlayer", AnimationPlayer)
+            .play("Hide", -1.0, 1.0, false);
     }
 }
