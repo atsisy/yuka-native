@@ -104,6 +104,17 @@ impl MagicBoardHome {
             )
             .unwrap();
 
+        let guide_button = get_node_auto!(owner, "Scroll/VBox/Line1/Guide", TextureButton);
+        guide_button
+            .connect(
+                "pressed",
+                owner,
+                "guide_pressed",
+                VariantArray::new_shared(),
+                0,
+            )
+            .unwrap();
+
         let date = get_node_auto!(owner, "Date", Label);
         control_save_data(|save_data| {
             date.set_text(GodotString::from_str(
@@ -125,6 +136,14 @@ impl MagicBoardHome {
         owner.emit_signal(
             "move_mb_contents",
             &[Variant::from_str("Home"), Variant::from_str("SaveEntrance")],
+        );
+    }
+
+    #[export]
+    fn guide_pressed(&self, owner: &Node2D) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[Variant::from_str("Home"), Variant::from_str("GuideBook")],
         );
     }
 }
@@ -195,6 +214,18 @@ impl MagicBoard {
                 "move_mb_contents_handler",
                 VariantArray::new_shared(),
                 0,
+            
+            ).unwrap();
+
+        
+        let guide_book = get_node_auto!(owner, "Background/GuideBook", Node2D);
+        guide_book
+            .connect(
+                "move_mb_contents",
+                owner,
+                "move_mb_contents_handler",
+                VariantArray::new_shared(),
+                0,
             )
             .unwrap();
     }
@@ -206,6 +237,7 @@ impl MagicBoard {
             "SaveApp" => get_node_auto!(owner, "Background/MBSaveApp", Node2D),
             "LoadApp" => get_node_auto!(owner, "Background/MBLoadApp", Node2D),
             "ItemList" => get_node_auto!(owner, "Background/ItemList", Node2D),
+            "GuideBook" => get_node_auto!(owner, "Background/GuideBook", Node2D),
             _ => return,
         };
 
@@ -237,6 +269,7 @@ impl MagicBoard {
             "SaveApp" => get_node_auto!(owner, "Background/MBSaveApp", Node2D),
             "LoadApp" => get_node_auto!(owner, "Background/MBLoadApp", Node2D),
             "ItemList" => get_node_auto!(owner, "Background/ItemList", Node2D),
+            "GuideBook" => get_node_auto!(owner, "Background/GuideBook", Node2D),
             _ => return,
         };
 
@@ -779,5 +812,62 @@ impl MBItemList {
     #[export]
     fn root_app_update_handler(&self, owner: TRef<Node2D>) {
         self.update_item_list(owner);
+    }
+}
+
+
+#[derive(NativeClass)]
+#[inherit(Node2D)]
+#[register_with(Self::register_signals)]
+pub struct GuideBook;
+
+#[methods]
+impl GuideBook {
+    fn register_signals(builder: &ClassBuilder<Self>) {
+        builder.add_signal(Signal {
+            name: "move_mb_contents",
+            args: &[
+                SignalArgument {
+                    name: "before",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+                SignalArgument {
+                    name: "after",
+                    default: Variant::from_str("None"),
+                    export_info: ExportInfo::new(VariantType::GodotString),
+                    usage: PropertyUsage::DEFAULT,
+                },
+            ],
+        });
+    }
+
+    pub fn new(_owner: &Node2D) -> Self {
+        GuideBook
+    }
+
+    #[export]
+    pub fn _ready(&mut self, owner: TRef<Node2D>) {
+        let back = get_node_auto!(owner, "Back", TextureButton);
+        back.connect(
+            "pressed",
+            owner,
+            "back_button_pressed",
+            VariantArray::new_shared(),
+            0,
+        )
+        .unwrap();
+    }
+
+    #[export]
+    pub fn back_button_pressed(&mut self, owner: TRef<Node2D>) {
+        owner.emit_signal(
+            "move_mb_contents",
+            &[
+                Variant::from_str("GuideBook"),
+                Variant::from_str("Home"),
+            ],
+        );
     }
 }

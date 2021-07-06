@@ -39,6 +39,7 @@ fn init(handle: InitHandle) {
     handle.add_class::<crate::scene::home::MBItemList>();
     handle.add_class::<crate::scene::home::MBItemEntry>();
     handle.add_class::<crate::utils::SceneTransition>();
+    handle.add_class::<crate::scene::home::GuideBook>();
 }
 
 godot_init!(init);

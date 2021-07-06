@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use gdnative::prelude::*;
 
 use serde::{Deserialize, Serialize};
@@ -197,7 +198,8 @@ impl SaveDataManager {
     #[export]
     fn save(&mut self, _owner: &Node, file_name: Variant) {
         control_save_data_mut(|save_data| {
-            save_data.real_date = chrono::Local::today().to_string();
+            let date =  chrono::Local::today();
+            save_data.real_date = format!("{}-{}-{}", date.year(), date.month(), date.day());
 
             let mut file = std::fs::File::create(file_name.to_string()).unwrap();
 
